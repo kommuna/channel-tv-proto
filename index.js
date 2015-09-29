@@ -94,7 +94,7 @@ Slideshow.prototype.showNext = function() {
 var ss = null;
 
 $(document).ready(function() {
-  $("#images").hide();
+  //$("#images").hide();
   ss = new Slideshow($("#images"));
   $.ajax("https://api.flickr.com/services/rest",
   {
