@@ -30,6 +30,7 @@
 
       // 4. The API will call this function when the video player is ready.
       function onPlayerReady(event) {
+	  alert("PLAYING!");
         event.target.playVideo();
       }
 
@@ -39,7 +40,7 @@
       var done = false;
       function onPlayerStateChange(event) {
         if (event.data == YT.PlayerState.PLAYING && !done) {
-          setTimeout(stopVideo, 6000);
+          //setTimeout(stopVideo, 6000);
           done = true;
         }
       }
@@ -69,7 +70,7 @@
     </div>
 	
 	<!-- Player -->
-    <iframe id="player" type="text/html" width="0" height="0"
+    <iframe id="player" type="text/html" width="500" height="200"
        src="https://www.youtube.com/embed/_QdHFNmpl90?enablejsapi=1&origin=http://kommuna.github.io/"
        frameborder="0"></iframe>
 
