@@ -45,6 +45,8 @@ var Slideshow = function($root) {
 	this.index = 0;
 	this.duration = 3000;
 	this.lifetime = 5000;
+	this.showTitles = false;
+	this.onShowImage = null;
 };
 
 Slideshow.prototype.createImage = function(img) {
@@ -66,7 +68,11 @@ Slideshow.prototype.start = function(imageData) {
 	this.imagePromises[0].done(function(img) {
 		self.createImage(img)
 	      .appendTo(self.$root)
-		  .fadeTo(self.duration, 1);
+		  .fadeTo(self.duration, 1, function() {
+				if (self.onShowImage) {
+					self.onShowImage(self.data[self.index]);
+				}
+			});
 	});
 	setTimeout(function() { self.showNext(); }, self.lifetime);
 };
@@ -84,33 +90,15 @@ Slideshow.prototype.showNext = function() {
 		  $(img1).remove();
 		  self.createImage(img2)
 	        .appendTo(self.$root)
-		    .fadeTo(self.duration, 1, function() { setTimeout(function() { self.showNext(); }, self.lifetime); });
+		    .fadeTo(self.duration, 1, function() {
+				  if (self.onShowImage) {
+					  self.onShowImage(self.data[self.index]);
+				  }
+				  setTimeout(function() { self.showNext(); }, self.lifetime);
+			  });
 		});
 	});
 };
 
 
 
-var ss = null;
-
-$(document).ready(function() {
-  //$("#images").hide();
-  ss = new Slideshow($("#images"));
-  $.ajax("https://api.flickr.com/services/rest",
-  {
-	//data: { method: "flickr.photos.search", "api_key": apiKey, tags: "inspireme", format: "json", media: "photos", per_page: 50 },
-	data: { method: "flickr.groups.pools.getPhotos", "api_key": apiKey, group_id: "23854677@N00", format: "json", per_page: 100 },
-	type: "get",
-    dataType: 'jsonp',
-	jsonpCallback: 'jsonFlickrApi',
-    success: function(data) {
-      console.log(data);
-	  var imageData = new Array();
-      $.each(data.photos.photo, function(i,item) {
-		var src = "http://farm" + item.farm + ".staticflickr.com/" + item.server + "/" + item.id + "_" + item.secret + "_c.jpg";
-		imageData[i] = { src: src, title: item.title };
-      });
-      ss.start(imageData);
-    }
-  });
-});

@@ -4,7 +4,33 @@
   <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
   <!--script src="jssor.slider.mini.js"></script-->
   <script src="index.js"></script>
-  
+
+    <script>
+        var ss = null;
+
+        $(document).ready(function() {
+            //$("#images").hide();
+            ss = new Slideshow($("#images"));
+            $.ajax("https://api.flickr.com/services/rest",
+                    {
+                        //data: { method: "flickr.photos.search", "api_key": apiKey, tags: "inspireme", format: "json", media: "photos", per_page: 50 },
+                        data: { method: "flickr.groups.pools.getPhotos", "api_key": apiKey, group_id: "23854677@N00", format: "json", per_page: 100 },
+                        type: "get",
+                        dataType: 'jsonp',
+                        jsonpCallback: 'jsonFlickrApi',
+                        success: function(data) {
+                            console.log(data);
+                            var imageData = new Array();
+                            $.each(data.photos.photo, function(i,item) {
+                                var src = "http://farm" + item.farm + ".staticflickr.com/" + item.server + "/" + item.id + "_" + item.secret + "_c.jpg";
+                                imageData[i] = { src: src, title: item.title };
+                            });
+                            ss.start(imageData);
+                        }
+                    });
+        });
+    </script>
+
     <script>
       // 2. This code loads the IFrame Player API code asynchronously.
       var tag = document.createElement('script');
