@@ -12,20 +12,49 @@
           async defer
           src="http://assets.pinterest.com/js/pinit.js"
           ></script>
+
+  <script src="https://w.soundcloud.com/player/api.js" type="text/javascript"></script>
+
   <script src="index.js"></script>
   
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
   
+  <style>
+    a.pinlink {
+	  padding: 0;
+	}
+	a.pinlink:hover {
+	  padding: 0;
+	  text-decoration: none;
+	}
+	a.pinlink img {
+	  padding: 0;
+	}
+	a.pinlink span {
+	  padding: 0;
+	}
+  </style>
+  
+  
   <script>
+  
+  function onStartHideImage(idata) {
+    $("#gotoLink").removeAttr("href");
+	//$("#title").text("");
+  }
+  
+  function onStartShowImage(idata) {
+    $("#title").text(idata.title);
+    $("#gotoLink").attr("href", idata.link);
+  }
+  
   var boardFeedURL = "https://www.pinterest.com/skogkatten/cute-cats.rss";
   var feedPromise = new $.Deferred();
   var ss = null;
   jQuery(document).ready(function() {
     ss = new Slideshow($("#slideshow"));
-    ss.onShowImage = function(idata) {
-      $("#title").text(idata.title);
-      $("#gotoLink").attr("href", idata.link);
-    };
+    ss.onStartShowImage = onStartShowImage;
+	ss.onStartHideImage = onStartHideImage;
     $.ajax({
       url      : 'http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=50&callback=?&q=' + encodeURIComponent(boardFeedURL),
       dataType : 'json',
@@ -33,9 +62,12 @@
         if (data.responseData.feed && data.responseData.feed.entries) {
           var imageData = [];
           var re = new RegExp("<img src=\"([^\"]+)\">");
+		  // hacked: http://zoerooney.com/blog/tutorials/grab-full-size-images-pinterest-rss-feed/
           $.each(data.responseData.feed.entries, function (i, e) {
-            imageData[i] = { src: re.exec(e.content)[1], title: e.title, link: e.link };
-            console.log(imageData[i]);
+		    var src = re.exec(e.content)[1];
+		    var largesrc = src.replace('/236x/', '/736x/');
+            imageData[i] = { src: largesrc, title: e.title, link: e.link };
+            //console.log(imageData[i]);
           });
           feedPromise.resolve(imageData);
         }
@@ -47,6 +79,40 @@
 	});
   });
   </script>
+  
+
+<script>
+//SC.initialize({
+//  client_id: 'ffa80056ad7facb4587740cd833d82e5'
+//});
+
+jQuery(document).ready(function() {
+
+var track_url = 'https://soundcloud.com/relaxdaily/relaxdaily-n084-relaxing-instrumental-music-studying-relaxing-spa';
+var $sw = $("#soundwidget");
+var sc = SC.Widget("soundwidget");
+sc.bind(SC.Widget.Events.READY, function() {
+  // load new widget
+  widget.bind(SC.Widget.Events.FINISH, function() {
+    widget.load(track_url, {
+      show_artwork: false
+    });
+  });
+});
+
+/*
+SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
+  $sw.html(oEmbed.html);
+  $sw.hide();
+  $sw.find("iframe").attr({width: 1, height: 1});
+  $sw.show();
+  console.log('oEmbed response: ', oEmbed);
+});
+*/
+});
+
+</script>
+  
 </head>
 
 <body>
@@ -57,15 +123,19 @@
 
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-1">
+        <div class="col-md-2">
+		  <div style="padding-left: 10px;">
           <div class="row">
-            <a href="" id="gotoLink" class="btn-small"><img src="https://addons.opera.com/media/extensions/55/19155/1.1-rev1/icons/icon_64x64.png" /><h3 class="display: inline;" id="title"></h3></a>
+            <a class="pinlink" href="" id="gotoLink" style="padding: 0;"><img style="width: 32px; height: 32px;" src="https://addons.opera.com/media/extensions/55/19155/1.1-rev1/icons/icon_64x64.png" />
+			  <span style="font-style: italic; display: inline-block; vertical-align: middle; font-size: 22px;" id="title"></span>
+			</a>
           </div>
           <div class="row">
-            <div id="slideshow"></div>
+            <div id="slideshow" style="padding-top: 10px;"></div>
           </div>
+		  </div>
         </div>
-        <div class="col-md-11">
+        <div class="col-md-10">
             <div class="row">
               <div class="col-md-7" style="min-width: 960px;"><div id="player"></div></div>
               <div class="col-md-2">
@@ -89,6 +159,8 @@
         </div>
       </div>
     </div>
+	
+	<iframe id="soundwidget" style="display: none;"></iframe>
 
 
 </body>

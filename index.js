@@ -46,7 +46,6 @@ var Slideshow = function($root) {
 	this.duration = 3000;
 	this.lifetime = 5000;
 	this.showTitles = false;
-	this.onShowImage = null;
 };
 
 Slideshow.prototype.createImage = function(img) {
@@ -66,12 +65,11 @@ Slideshow.prototype.start = function(imageData) {
 	this.imageCount = imageData.length;
 	var self = this;
 	this.imagePromises[0].done(function(img) {
+		self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
 		self.createImage(img)
 	      .appendTo(self.$root)
 		  .fadeTo(self.duration, 1, function() {
-				if (self.onShowImage) {
-					self.onShowImage(self.data[self.index]);
-				}
+				self.onShowImage && self.onShowImage(self.data[self.index]);
 			});
 	});
 	setTimeout(function() { self.showNext(); }, self.lifetime);
@@ -86,8 +84,10 @@ Slideshow.prototype.showNext = function() {
 	}
 	var self = this;
 	$.when(this.imagePromises[prevIndex], this.imagePromises[this.index]).done(function(img1, img2) {
+		self.onStartHideImage && self.onStartHideImage(self.data[self.prevIndex]);
 		$(img1).fadeTo(self.duration, 0, function() {
 		  $(img1).remove();
+          self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
 		  self.createImage(img2)
 	        .appendTo(self.$root)
 		    .fadeTo(self.duration, 1, function() {
