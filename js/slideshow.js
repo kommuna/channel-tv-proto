@@ -1,4 +1,3 @@
-
 // http://aboutcode.net/2013/01/09/load-images-with-jquery-deferred.html
 $.loadImage = function(url) {
   // Define a "worker" function that should eventually resolve or reject the deferred object.
@@ -46,12 +45,16 @@ var Slideshow = function($root) {
 	this.lifetime = 5000;
 	this.showTitles = false;
 	this.paused = false;
+	this.transitionOn = {opacity: 1};
+	this.transitionOff = {opacity: 0};
+	$root.on("image:ready", function(evt, $img) {
+		console.log($img);
+		$img.css({opacity:0});
+	});
 };
 
 Slideshow.prototype.createImage = function(img) {
-	$img = $(img)
-			.css({ opacity: 0, width: img.width, height: img.height });
-	return $img;
+	return $(img).css({ width: img.width, height: img.height });
 };
 
 Slideshow.prototype.start = function(imageData) {
@@ -66,11 +69,12 @@ Slideshow.prototype.start = function(imageData) {
 	var self = this;
 	this.imagePromises[0].done(function(img) {
 		self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
-		self.activeImage = self.createImage(img)
-	      .appendTo(self.$root)
-		  .fadeTo(self.duration, 1, function() {
-				self.onShowImage && self.onShowImage(self.data[self.index]);
-			});
+        var $img = self.createImage(img);
+        self.$root.trigger("image:ready", [$img]);
+		self.activeImage = $img;
+		self.transitionOn(img, self.duration, function() {
+            self.onShowImage && self.onShowImage(self.data[self.index]);
+        });
 	});
 	setTimeout(function() { self.showNext(); }, self.lifetime);
 };
@@ -85,12 +89,14 @@ Slideshow.prototype.showNext = function() {
 	var self = this;
 	$.when(this.imagePromises[prevIndex], this.imagePromises[this.index]).done(function(img1, img2) {
 		self.onStartHideImage && self.onStartHideImage(self.data[self.prevIndex]);
-		$(img1).fadeTo(self.duration, 0, function() {
+		self.transitionOff(img1, self.duration, function() {
+          self.$root.trigger("imageDismissed", self.activeImage);
 		  $(img1).remove();
           self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
-		  self.activeImage = self.createImage(img2)
-	        .appendTo(self.$root)
-		    .fadeTo(self.duration, 1, function() {
+		  var aImg = self.createImage(img2);
+		  self.$root.trigger("image:ready", [aImg]);
+		  self.activeImage = aImg;
+		  self.transitionOn(img2, self.duration, function() {
 				  if (self.onShowImage) {
 					  self.onShowImage(self.data[self.index]);
 				  }
@@ -116,4 +122,8 @@ Slideshow.prototype.pause = function() {
 Slideshow.prototype.resume = function() {
 	this.activeImage && this.activeImage.resume();
 	this.onResume && this.onResume();
+}
+
+Slideshow.prototype.bind = function(event, handler) {
+	this.$root.on(event, handler);
 }
