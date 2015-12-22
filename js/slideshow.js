@@ -38,92 +38,89 @@ $.loadImage = function(url) {
 };
 
 var Slideshow = function($root) {
-	this.$root = $root;
-	this.imagePromises = [];
-	this.index = 0;
-	this.duration = 3000;
-	this.lifetime = 5000;
-	this.showTitles = false;
-	this.paused = false;
-	this.transitionOn = {opacity: 1};
-	this.transitionOff = {opacity: 0};
-	$root.on("image:ready", function(evt, $img) {
-		console.log($img);
-		$img.css({opacity:0});
-	});
+    this.$root = $root;
+    this.imagePromises = [];
+    this.index = 0;
+    this.duration = 3000;
+    this.lifetime = 5000;
+    this.showTitles = false;
+    this.paused = false;
+    this.transitionOn = {opacity: 1};
+    this.transitionOff = {opacity: 0};
+    this.onImageReady = null;
+    this.onImageDismissed = function(img) { $(img).remove(); }
 };
 
 Slideshow.prototype.createImage = function(img) {
-	return $(img).css({ width: img.width, height: img.height });
+    return $(img).css({ width: img.width, height: img.height });
 };
 
 Slideshow.prototype.start = function(imageData) {
-	this.data = imageData;
-	var promises = this.imagePromises;
-	$.each(imageData, function(i, data) {
-		promises[i] = $.loadImage(data.src);
-	});
+    this.data = imageData;
+    var promises = this.imagePromises;
+    $.each(imageData, function(i, data) {
+        promises[i] = $.loadImage(data.src);
+    });
     this.$root.show();
-	this.index = 0;
-	this.imageCount = imageData.length;
-	var self = this;
-	this.imagePromises[0].done(function(img) {
-		self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
+    this.index = 0;
+    this.imageCount = imageData.length;
+    var self = this;
+    this.imagePromises[0].done(function(img) {
+        self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
         var $img = self.createImage(img);
-        self.$root.trigger("image:ready", [$img]);
-		self.activeImage = $img;
-		self.transitionOn(img, self.duration, function() {
+        self.onImageReady && self.onImageReady(img);
+        self.activeImage = $img;
+        self.transitionOn(img, self.duration, function() {
             self.onShowImage && self.onShowImage(self.data[self.index]);
         });
-	});
-	setTimeout(function() { self.showNext(); }, self.lifetime);
+    });
+    setTimeout(function() { self.showNext(); }, self.lifetime);
 };
 
 Slideshow.prototype.showNext = function() {
-	// current image is supposed to be loaded. load next
-	var prevIndex = this.index;
-	this.index++;
-	if (this.index >= this.imageCount) {
-		this.index = 0;
-	}
-	var self = this;
-	$.when(this.imagePromises[prevIndex], this.imagePromises[this.index]).done(function(img1, img2) {
-		self.onStartHideImage && self.onStartHideImage(self.data[self.prevIndex]);
-		self.transitionOff(img1, self.duration, function() {
-          self.$root.trigger("imageDismissed", self.activeImage);
-		  $(img1).remove();
+    // current image is supposed to be loaded. load next
+    var prevIndex = this.index;
+    this.index++;
+    if (this.index >= this.imageCount) {
+        this.index = 0;
+    }
+    var self = this;
+    $.when(this.imagePromises[prevIndex], this.imagePromises[this.index]).done(function(img1, img2) {
+        self.onStartHideImage && self.onStartHideImage(self.data[self.prevIndex]);
+        self.transitionOff(img1, self.duration, function() {
           self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
-		  var aImg = self.createImage(img2);
-		  self.$root.trigger("image:ready", [aImg]);
-		  self.activeImage = aImg;
-		  self.transitionOn(img2, self.duration, function() {
-				  if (self.onShowImage) {
-					  self.onShowImage(self.data[self.index]);
-				  }
-				  setTimeout(function() { self.showNext(); }, self.lifetime);
-			  });
-		});
-	});
+          var aImg = self.createImage(img2);
+          self.onImageReady && self.onImageReady(img2);
+          self.activeImage = aImg;
+          self.transitionOn(img2, self.duration, function() {
+            self.onImageDismissed && self.onImageDismissed(img1);
+            if (self.onShowImage) {
+              self.onShowImage(self.data[self.index]);
+            }
+            setTimeout(function() { self.showNext(); }, self.lifetime);
+          });
+        });
+    });
 };
 
 Slideshow.prototype.toggle = function() {
-	if (this.paused) {
-		this.resume();
-	} else {
-		this.pause();
-	}
+    if (this.paused) {
+        this.resume();
+    } else {
+        this.pause();
+    }
 }
 
 Slideshow.prototype.pause = function() {
-	this.activeImage && this.activeImage.pause();
-	this.onPause && this.onPause();
+    this.activeImage && this.activeImage.pause();
+    this.onPause && this.onPause();
 }
 
 Slideshow.prototype.resume = function() {
-	this.activeImage && this.activeImage.resume();
-	this.onResume && this.onResume();
+    this.activeImage && this.activeImage.resume();
+    this.onResume && this.onResume();
 }
 
 Slideshow.prototype.bind = function(event, handler) {
-	this.$root.on(event, handler);
+    this.$root.on(event, handler);
 }
