@@ -119,7 +119,7 @@ $(window).load(function() {
 
 jQuery(document).ready(function() {
 
-var track_url = 'https://soundcloud.com/lumensummerdale/lumen-summerdale-sunshine-makes-me-happy';
+var track_url = 'https://soundcloud.com/binary_for_breakfast/star-wars-theme';
 var $sw = $("#soundwidget");
 var sc = SC.Widget("soundwidget");
 sc.bind(SC.Widget.Events.PAUSE, function() {
@@ -198,14 +198,11 @@ SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
 </head>
 
 <body>
-<!--
-	<div style="float: left; margin-left: 100px; margin-top:20px;">
-	  <h1>Pinterest, SoundCloud</h1>
-	</div>
-	-->
 	<div id="slideshow" style="position: absolute; margin: 0; padding: 0; background-color: black; border: none; transition: all 0.5s ease 0s;">
 	  <div id="slideContainer" style="position: relative; margin: 0; padding: 0;">
-  	    <div id="block1" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0;"></div>
+  	    <div id="block1" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0;">
+		  <h1 style="margin-left: 45%; margin-top: 100px; color: white;">Pinterest + SoundCloud.<br/>Loading...</h1>
+		</div>
 	    <div id="block2" style="position: absolute; top: 0; left: 1024px; width: 100%; height: 100%; margin: 0; padding: 0;"></div>
 	  </div>
 	</div>
