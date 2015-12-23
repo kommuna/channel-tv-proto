@@ -8,6 +8,7 @@
   <!--script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script-->
   <script src="http://code.jquery.com/jquery-2.1.4.min.js" type="text/javascript"></script>
   <script src="jquery.pause.min.js"></script>
+  <script src="js/jquery.transit.min.js"></script>
   <script src="https://w.soundcloud.com/player/api.js" type="text/javascript"></script>
 
   <script src="js/slideshow.js"></script>
@@ -16,25 +17,32 @@
   var feedPromise = new $.Deferred();
   var soundPromise = new $.Deferred();
   
-  var currentBlock = false;
   var viewportSize = {width: 0};
   
   function winResized() {
     var $ss = $("#slideshow");
     var ww = $(window).width();
-	var wh = $(window).height();
-	viewportSize.width = ww;
-	viewportSize.height = wh;
-	console.log("W" + ww + " H " + wh);
-	$ss.css({width: ww, height: wh});
-	$("body").css({width: ww, height: wh});
-	$("#block1").css({top: 0, left: 0, width: ww, height: wh});
-	$("#block2").css({top: 0, left: ww, width: ww, height: wh});
+    var wh = $(window).height();
+    viewportSize.width = ww;
+    viewportSize.height = wh;
+    console.log("Viewport is now: " + ww + "x" + wh);
+    $ss.css({width: ww, height: wh});
+    $("body").css({width: ww, height: wh});
+    var $blocks = $("div.slideBlock");
+    $blocks.addClass("notransition").stop(true);
+    $($blocks[0]).css({top: 0, left: 0, width: ww, height: wh});
+    $($blocks[1]).css({top: 0, left: ww, width: ww, height: wh});
+    
+    $blocks.children("img").each(function(index, img) {
+      scaleImage(img);
+    });
+    
+    $blocks.removeClass("notransition");
   }
   
   function onStartHideImage(idata) {
     //$("#gotoLink").removeAttr("href");
-	//$("#title").text("");
+    //$("#title").text("");
   }
   
   function onStartShowImage(idata) {
@@ -44,9 +52,25 @@
   
   function scaleImage(img) {
     var $img = $(img).addClass("slide");
-	$img.appendTo(currentBlock ? $("#block1") : $("#block2"));
-	currentBlock = !currentBlock;
-	return $img;
+    var iW = img.width;
+    var iH = img.height;
+    var iAspect = iW/iH;
+    var oAspect = viewportSize.width/viewportSize.height;
+    
+    if (iAspect > oAspect) {
+      // align to width
+      iW = viewportSize.width;
+      iH = parseInt(viewportSize.width / iAspect);
+    } else {
+      // align to height
+      iW = parseInt(viewportSize.height * iAspect);
+      iH = viewportSize.height;
+    }
+    
+    console.log("SCALED TO >>> " + iW + "," + iH);
+    $img.css({width:iW, height: iH});
+    
+    return $img;
   }
   
   var boardFeedURL =   "https://uk.pinterest.com/earthskylab/axis-mundi-earthskylab.rss";
@@ -54,63 +78,72 @@
   var ss = null;
   jQuery(document).ready(function() {
     ss = new Slideshow($("#slideshow"));
-	ss.bind("image:ready", function(evt, img) {
-	  scaleImage(img);
-	  console.log("BIND " + img);
-	});
-	ss.transitionOn = function(img, duration, complete) {
-	  var props = {left: -viewportSize.width};
-	  console.log(props);
-	  $("#slideContainer").animate(props, duration, complete);
-	};
-	ss.transitionOff = function(img, duration, complete) {
-	  var props = {left: -viewportSize.width};
-	  console.log(props);
-	  $("#slideContainer").animate(props, duration, complete);
-	};
-	//ss.on("image:destroy", function(evt, img) {
-	//});
-	ss.bind("image:", function() {
-	});
-	ss.onPause = function() {
-	  $("#videoStatus").text("Paused");
-	};
-	ss.onResume = function() {
-	  $("#videoStatus").text("Playing");
-	};
+    ss.onImageReady = function(img) {
+      var $img = scaleImage(img);
+      //$img.appendTo($("div.slideBlock").eq(1));
+      $("div.slideBlock").eq(0).remove();
+      var $block = $("<div/>").addClass("slideBlock").css({
+        position: "absolute", left: viewportSize.width, top: 0, width: "100%", height: "100%", margin: 0, padding: 0,
+        "-webkit-backface-visibility": "hidden"
+      }).appendTo("#slideshow");
+      $img.appendTo($block);
+      console.log("IMAGE READY >>>>>>>>> " + $img.width() + "x" + $img.height());
+    };
+    ss.onImageDismissed = null;
+    ss.transitionOn = function(img, duration, complete) {
+      $("div.slideBlock").eq(0).transition({left: -viewportSize.width}, duration, 'ease');
+      $("div.slideBlock").eq(1).transition({left: 0}, duration, 'ease', complete);
+    };
+    ss.transitionOff = function(img, duration, complete) {
+      //var props = {left: -viewportSize.width};
+      //$("div.slideBlock").transition(props, duration, 'ease', complete);
+      complete && complete();
+    };
+    
+    ss.onStartHideImage = function() {
+      //$("div.slideBlock").eq(0).remove();
+      //$("<div/>").addClass("slideBlock").css({position: "absolute", width: "100%", height: "100%", margin: 0, padding: 0}).appendTo("#slideshow");
+    };
+    
+    ss.onPause = function() {
+      $("#videoStatus").text("Paused");
+    };
+    ss.onResume = function() {
+      $("#videoStatus").text("Playing");
+    };
     $.ajax({
       url      : 'http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=50&callback=?&q=' + encodeURIComponent(boardFeedURL),
       dataType : 'json',
       success  : function (data) {
-	    $("#videoStatus").text("Ready");
+        $("#videoStatus").text("Ready");
         if (data.responseData.feed && data.responseData.feed.entries) {
           var imageData = [];
           var re = new RegExp("<img src=\"([^\"]+)\">");
-		  // hacked: http://zoerooney.com/blog/tutorials/grab-full-size-images-pinterest-rss-feed/
+          // hacked: http://zoerooney.com/blog/tutorials/grab-full-size-images-pinterest-rss-feed/
           $.each(data.responseData.feed.entries, function (i, e) {
-		    var src = re.exec(e.content)[1];
-		    var largesrc = src.replace('/236x/', '/736x/');
+            var src = re.exec(e.content)[1];
+            var largesrc = src.replace('/236x/', '/736x/');
             imageData[i] = { src: largesrc, title: e.title, link: e.link };
           });
           feedPromise.resolve(imageData);
         }
       }
     });
-	
-	$.when(feedPromise, soundPromise).done(function(images, sound) {
-	  $("#loadingBlock").hide();
-	  $("#activeBlock").show();
+    
+    $.when(feedPromise, soundPromise).done(function(images, sound) {
+      $("#loadingBlock").hide();
+      $("#activeBlock").show();
       ss.start(images);
       $("#videoStatus").text("Playing");
-	  $("#pause").removeAttr("disabled");
-	});
+      $("#pause").removeAttr("disabled");
+    });
   });
 
 
 $(window).load(function() {
-	winResized();
+    winResized();
 }).on('resize',function() {
-	winResized();
+    winResized();
 });
   </script>
   
@@ -124,15 +157,15 @@ var $sw = $("#soundwidget");
 var sc = SC.Widget("soundwidget");
 sc.bind(SC.Widget.Events.PAUSE, function() {
   $("#audioStatus").text("Paused");
-	$.when(feedPromise).then(function() {
-	  ss.pause();
-	});
+    $.when(feedPromise).then(function() {
+      ss.pause();
+    });
 });
 sc.bind(SC.Widget.Events.FINISH, function() {
   $("#audioStatus").text("Finished");
-	$.when(feedPromise).then(function() {
-	  ss.pause();
-	});
+    $.when(feedPromise).then(function() {
+      ss.pause();
+    });
 });
 
 sc.bind(SC.Widget.Events.READY, function() {
@@ -140,25 +173,25 @@ sc.bind(SC.Widget.Events.READY, function() {
   $("#audioStatus").text("Ready");
   sc.setVolume(0.5);
   sc.load(track_url, {
-	  auto_play: true,
-	  buying: false,
-	  liking: false,
-	  download: false,
-	  sharing: false,
+      auto_play: true,
+      buying: false,
+      liking: false,
+      download: false,
+      sharing: false,
       show_artwork: false,
-	  show_comments: false,
-	  show_playcount: false,
-	  show_user: false
+      show_comments: false,
+      show_playcount: false,
+      show_user: false
   });
   sc.bind(SC.Widget.Events.PLAY, function() {
     $("#audioStatus").text("Playing");
     sc.setVolume(0.5);  // have to push it again, goddamn fuck.
-	sc.getVolume(function(vol) {
-	  $("#volume").text(parseFloat(vol)*100);
-	});
-	$.when(feedPromise).then(function() {
-	  ss.resume();
-	});
+    sc.getVolume(function(vol) {
+      $("#volume").text(parseFloat(vol)*100);
+    });
+    $.when(feedPromise).then(function() {
+      ss.resume();
+    });
     soundPromise.resolve(sc);
   });
 });
@@ -179,9 +212,9 @@ SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
 <style>
   body {
     margin: 0;
-	padding: 0;
-	background-color: #000;
-	overflow: hidden;
+    padding: 0;
+    background-color: #000;
+    overflow: hidden;
   }
   
   img.slide {
@@ -189,8 +222,16 @@ SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
     top: 50%;
     left: 50%;
     transform: translateX(-50%) translateY(-50%);
-    max-width: 100%;
-    max-height: 100%;
+    /*max-width: 100%;
+    max-height: 100%;*/
+  }
+  
+  .notransition {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    -ms-transition: none !important;
+    transition: none !important;
   }
   
 </style>
@@ -198,61 +239,20 @@ SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
 </head>
 
 <body>
-	<div id="slideshow" style="position: absolute; margin: 0; padding: 0; background-color: black; border: none; transition: all 0.5s ease 0s;">
-	  <div id="slideContainer" style="position: relative; margin: 0; padding: 0;">
-  	    <div id="block1" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0;">
-		  <h1 style="margin-left: 45%; margin-top: 100px; color: white;">Pinterest + SoundCloud.<br/>Loading...</h1>
-		</div>
-	    <div id="block2" style="position: absolute; top: 0; left: 1024px; width: 100%; height: 100%; margin: 0; padding: 0;"></div>
-	  </div>
-	</div>
-    <!-- div class="container-fluid">
-      <div class="row">
-	    <div id="loadingBlock" class="col-md-2">
-		  <h1 style="height: 300px;">Loading...</h1><img src="img/loading2.gif"/>
-		</div>
-        <div id="activeBlock" class="col-md-2" style="display: none;">
-		  <div style="padding-left: 10px;">
-          <div class="row">
-            <a class="pinlink" href="" id="gotoLink" style="padding: 0;"><img style="width: 32px; height: 32px;" src="https://addons.opera.com/media/extensions/55/19155/1.1-rev1/icons/icon_64x64.png" />
-			  <span style="font-style: italic; display: inline-block; vertical-align: middle; font-size: 22px;" id="title"></span>
-			</a>
-          </div>
-		  </div>
-        </div>
-        <div class="col-md-10">
-            <div class="row">
-              <div class="col-md-7" style="min-width: 960px;"><div id="player"></div></div>
-              <div class="col-md-2">
-                <div id="audioInfo">
-                  <ul class="list-group">
-                    <li class="list-group-item">
-                      <span id="videoTime" class="badge"></span>
-                      Slideshow <em><span id="videoStatus">Initializing</span></em>
-                    </li>
-                    <li class="list-group-item">
-                      <span id="audioTime" class="badge"></span>
-                      Audio <em><span id="audioStatus">Initializing</span></em>
-                    </li>
-                    <li class="list-group-item">
-                      Volume <em><span id="volume"></span></em>
-                    </li>
-                  </ul>
-                  <button id="pause" class="btn btn-primary btn-block btn-lg" disabled="disabled">Pause/Resume All</button>
-                </div>
-              </div>
-            </div>
-        </div>
+    <div id="slideshow" style="position: absolute; margin: 0; padding: 0; background-color: black; border: none; transition: all 0.5s ease 0s;">
+      <div class="slideBlock" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0; -webkit-backface-visibility: hidden;">
+        <h1 style="z-index: 10000; color: white; margin-left: 45%;">Loading...</h1>
       </div>
-    </div -->
-    <iframe id="soundwidget" src="https://w.soundcloud.com/player/?url=http://api.soundcloud.com/users/1539950/favorites" width="100" height="1" scrolling="no" frameborder="no" style="opacity: 0;"></iframe>	
-	<script>
-	  $("#pause").on("click", function() {
-	    soundPromise.done(function(sw) {
-		  sw.toggle();
-		});
-	  });
-	</script>
+      <div class="slideBlock" style="position: absolute; top: 0; left: 1024px; width: 100%; height: 100%; margin: 0; padding: 0; -webkit-backface-visibility: hidden;"></div>
+    </div>
+    <iframe id="soundwidget" src="https://w.soundcloud.com/player/?url=http://api.soundcloud.com/users/1539950/favorites" width="100" height="1" scrolling="no" frameborder="no" style="opacity: 0;"></iframe>  
+    <script>
+      $("#pause").on("click", function() {
+        soundPromise.done(function(sw) {
+          sw.toggle();
+        });
+      });
+    </script>
 </body>
 
 </html>
