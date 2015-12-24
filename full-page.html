@@ -20,34 +20,25 @@
   var viewportSize = {width: 0};
   
   function winResized() {
-    var $ss = $("#slideshow");
-    var ww = $(window).width();
-    var wh = $(window).height();
-    viewportSize.width = ww;
-    viewportSize.height = wh;
-    console.log("Viewport is now: " + ww + "x" + wh);
-    $ss.css({width: ww, height: wh});
-    $("body").css({width: ww, height: wh});
-    var $blocks = $("div.slideBlock");
-    $blocks.addClass("notransition").stop(true);
-    $($blocks[0]).css({top: 0, left: 0, width: ww, height: wh});
-    $($blocks[1]).css({top: 0, left: ww, width: ww, height: wh});
-    
-    $blocks.children("img").each(function(index, img) {
-      scaleImage(img);
+    $("#slideshow").queue(function(next) {
+        var $ss = $("#slideshow");
+        var ww = $(window).width();
+        var wh = $(window).height();
+		viewportSize.width = ww;
+        viewportSize.height = wh;
+        console.log("Viewport is now: " + ww + "x" + wh);
+        $ss.css({width: ww, height: wh});
+        $("body").css({width: ww, height: wh});
+        var $blocks = $("div.slideBlock");
+        //$blocks.addClass("notransition").stop(true);
+        $($blocks[0]).css({top: 0, left: 0, width: ww, height: wh});
+        $($blocks[1]).css({top: 0, left: ww, width: ww, height: wh});
+        $blocks.children("img").each(function(index, img) {
+          // todo animate rescale
+          scaleImage(img);
+        });
+        next();
     });
-    
-    $blocks.removeClass("notransition");
-  }
-  
-  function onStartHideImage(idata) {
-    //$("#gotoLink").removeAttr("href");
-    //$("#title").text("");
-  }
-  
-  function onStartShowImage(idata) {
-    $("#title").text(idata.title);
-    $("#gotoLink").attr("href", idata.link);
   }
   
   function scaleImage(img) {
@@ -75,7 +66,8 @@
   
   function newBlock() {
       return $("<div/>").addClass("slideBlock").css({
-        position: "absolute", left: viewportSize.width, top: 0, width: "100%", height: "100%", margin: 0, padding: 0,
+        position: "absolute", left: viewportSize.width, 
+        left: 0, top: 0, width: "100%", height: "100%", margin: 0, padding: 0,
         "-webkit-backface-visibility": "hidden"
       }).appendTo("#slideshow");
   }
@@ -85,6 +77,7 @@
   var ss = null;
   jQuery(document).ready(function() {
     ss = new Slideshow($("#slideshow"));
+    ss.duration = 1500;
     ss.onImageReady = function(img) {
       var $img = scaleImage(img);
       //$img.appendTo($("div.slideBlock").eq(1));
@@ -93,24 +86,21 @@
       $img.appendTo($block);
       console.log("IMAGE READY >>>>>>>>> " + $img.width() + "x" + $img.height());
     };
-    ss.onImageDismissed = null;
     ss.onWelcome = function(img, duration, complete) {
       var $img = scaleImage(img);
-      var $block = newBlock();
+      newBlock().css({left:-viewportSize.width});
+      var $block = newBlock().css({left:0});
+      $img.css({opacity:0}).appendTo($block);
+      $img.transition({opacity:1}, duration, complete);
     };
     ss.onTransition = function(img1, img2, duration, complete) {
+      var $img = scaleImage(img2);
+      $("div.slideBlock").eq(0).remove();
+      var $block = newBlock().css({left: viewportSize.width});
+      $img.appendTo($block);
+      console.log("IMAGE READY >>>>>>>>> " + $img.width() + "x" + $img.height());
       $("div.slideBlock").eq(0).transition({left: -viewportSize.width}, duration, 'ease');
       $("div.slideBlock").eq(1).transition({left: 0}, duration, 'ease', complete);
-    };
-    ss.transitionOff = function(img, duration, complete) {
-      //var props = {left: -viewportSize.width};
-      //$("div.slideBlock").transition(props, duration, 'ease', complete);
-      complete && complete();
-    };
-    
-    ss.onStartHideImage = function() {
-      //$("div.slideBlock").eq(0).remove();
-      //$("<div/>").addClass("slideBlock").css({position: "absolute", width: "100%", height: "100%", margin: 0, padding: 0}).appendTo("#slideshow");
     };
     
     ss.onPause = function() {
@@ -248,10 +238,12 @@ SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
 
 <body>
     <div id="slideshow" style="position: absolute; margin: 0; padding: 0; background-color: black; border: none; transition: all 0.5s ease 0s;">
+    <!--
       <div class="slideBlock" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0; -webkit-backface-visibility: hidden;">
         <h1 style="z-index: 10000; color: white; margin-left: 45%;">Loading...</h1>
       </div>
       <div class="slideBlock" style="position: absolute; top: 0; left: 1024px; width: 100%; height: 100%; margin: 0; padding: 0; -webkit-backface-visibility: hidden;"></div>
+      -->
     </div>
     <iframe id="soundwidget" src="https://w.soundcloud.com/player/?url=http://api.soundcloud.com/users/1539950/favorites" width="100" height="1" scrolling="no" frameborder="no" style="opacity: 0;"></iframe>  
     <script>

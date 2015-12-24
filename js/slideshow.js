@@ -45,26 +45,13 @@ var Slideshow = function($root) {
     this.lifetime = 5000;
     this.showTitles = false;
     this.paused = false;
-    this.transitionOn = {opacity: 1};
-    this.transitionOff = {opacity: 0};
     this.onWelcome = function(img, duration, next) {
         $(img).transition({opacity:1}, duration, next);
     };
     this.onTransition = function(img, duration, next) {
         $(img).transition({opacity:1}, duration, next);
     };
-    this.onImageReady = null;
     this.onImageDismissed = function(img) { $(img).remove(); }
-};
-
-Slideshow.FADE = {
-    this.onWelcome = function(img, duration, next) {
-        $(img).transition({opacity:1}, duration, next);
-    };
-    this.onTransition = function(img1, duration, next) {
-        
-        $(img).transition({opacity:1}, duration, next);
-    };
 };
 
 Slideshow.prototype.createImage = function(img) {
@@ -86,7 +73,7 @@ Slideshow.prototype.start = function(imageData) {
     this.imageCount = imageData.length;
     var self = this;
     this.$root.queue(function(next) {
-        this.imagePromises[0].done(function(img) {
+        self.imagePromises[0].done(function(img) {
             var $img = self.createImage(img);
             self.activeImage = $img;
             self.onWelcome && self.onWelcome(img, self.duration, next);
@@ -94,21 +81,7 @@ Slideshow.prototype.start = function(imageData) {
     }).delay(self.lifetime).queue(function(next) {
         self.showNext();
         next();
-    }):
-    /*
-    this.$root.fx()    this.imagePromises[0].done(function(img) {
-        self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
-        var $img = self.createImage(img);
-        self.activeImage = $img;
-        self.$root.queue("fx", function(next) {
-            self.onWelcome && self.onWelcome(img, self.duration, );
-        }
-        self.transitionOn(img, self.duration, function() {
-            self.onShowImage && self.onShowImage(self.data[self.index]);
-        });
     });
-    setTimeout(function() { self.showNext(); }, self.lifetime);
-    */
 };
 
 Slideshow.prototype.showNext = function() {
@@ -125,23 +98,8 @@ Slideshow.prototype.showNext = function() {
             self.$root.delay(self.lifetime).queue(function(next) {
                 self.showNext();
                 next();
-            }):
+            });
         });
-        /*
-        self.onStartHideImage && self.onStartHideImage(self.data[self.prevIndex]);
-        self.transitionOff(img1, self.duration, function() {
-          self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
-          var aImg = self.createImage(img2);
-          self.onImageReady && self.onImageReady(img2);
-          self.transitionOn(img2, self.duration, function() {
-            self.onImageDismissed && self.onImageDismissed(img1);
-            if (self.onShowImage) {
-              self.onShowImage(self.data[self.index]);
-            }
-            setTimeout(function() { self.showNext(); }, self.lifetime);
-          });
-        });
-        */
     });
 };
 
