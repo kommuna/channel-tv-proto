@@ -47,12 +47,32 @@ var Slideshow = function($root) {
     this.paused = false;
     this.transitionOn = {opacity: 1};
     this.transitionOff = {opacity: 0};
+    this.onWelcome = function(img, duration, next) {
+        $(img).transition({opacity:1}, duration, next);
+    };
+    this.onTransition = function(img, duration, next) {
+        $(img).transition({opacity:1}, duration, next);
+    };
     this.onImageReady = null;
     this.onImageDismissed = function(img) { $(img).remove(); }
 };
 
+Slideshow.FADE = {
+    this.onWelcome = function(img, duration, next) {
+        $(img).transition({opacity:1}, duration, next);
+    };
+    this.onTransition = function(img1, duration, next) {
+        
+        $(img).transition({opacity:1}, duration, next);
+    };
+};
+
 Slideshow.prototype.createImage = function(img) {
     return $(img).css({ width: img.width, height: img.height });
+};
+
+Slideshow.prototype.promiseFor = function(index) {
+    return $.loadImage(imageData[index]);
 };
 
 Slideshow.prototype.start = function(imageData) {
@@ -65,16 +85,30 @@ Slideshow.prototype.start = function(imageData) {
     this.index = 0;
     this.imageCount = imageData.length;
     var self = this;
-    this.imagePromises[0].done(function(img) {
+    this.$root.queue(function(next) {
+        this.imagePromises[0].done(function(img) {
+            var $img = self.createImage(img);
+            self.activeImage = $img;
+            self.onWelcome && self.onWelcome(img, self.duration, next);
+        });
+    }).delay(self.lifetime).queue(function(next) {
+        self.showNext();
+        next();
+    }):
+    /*
+    this.$root.fx()    this.imagePromises[0].done(function(img) {
         self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
         var $img = self.createImage(img);
-        self.onImageReady && self.onImageReady(img);
         self.activeImage = $img;
+        self.$root.queue("fx", function(next) {
+            self.onWelcome && self.onWelcome(img, self.duration, );
+        }
         self.transitionOn(img, self.duration, function() {
             self.onShowImage && self.onShowImage(self.data[self.index]);
         });
     });
     setTimeout(function() { self.showNext(); }, self.lifetime);
+    */
 };
 
 Slideshow.prototype.showNext = function() {
@@ -86,12 +120,19 @@ Slideshow.prototype.showNext = function() {
     }
     var self = this;
     $.when(this.imagePromises[prevIndex], this.imagePromises[this.index]).done(function(img1, img2) {
+        self.onTransition && self.onTransition(img1, img2, self.duration, function() {
+            self.activeImage = self.createImage(img2);
+            self.$root.delay(self.lifetime).queue(function(next) {
+                self.showNext();
+                next();
+            }):
+        });
+        /*
         self.onStartHideImage && self.onStartHideImage(self.data[self.prevIndex]);
         self.transitionOff(img1, self.duration, function() {
           self.onStartShowImage && self.onStartShowImage(self.data[self.index]);
           var aImg = self.createImage(img2);
           self.onImageReady && self.onImageReady(img2);
-          self.activeImage = aImg;
           self.transitionOn(img2, self.duration, function() {
             self.onImageDismissed && self.onImageDismissed(img1);
             if (self.onShowImage) {
@@ -100,6 +141,7 @@ Slideshow.prototype.showNext = function() {
             setTimeout(function() { self.showNext(); }, self.lifetime);
           });
         });
+        */
     });
 };
 

@@ -73,6 +73,13 @@
     return $img;
   }
   
+  function newBlock() {
+      return $("<div/>").addClass("slideBlock").css({
+        position: "absolute", left: viewportSize.width, top: 0, width: "100%", height: "100%", margin: 0, padding: 0,
+        "-webkit-backface-visibility": "hidden"
+      }).appendTo("#slideshow");
+  }
+  
   var boardFeedURL =   "https://uk.pinterest.com/earthskylab/axis-mundi-earthskylab.rss";
   //"https://www.pinterest.com/skogkatten/cute-cats.rss";
   var ss = null;
@@ -82,15 +89,16 @@
       var $img = scaleImage(img);
       //$img.appendTo($("div.slideBlock").eq(1));
       $("div.slideBlock").eq(0).remove();
-      var $block = $("<div/>").addClass("slideBlock").css({
-        position: "absolute", left: viewportSize.width, top: 0, width: "100%", height: "100%", margin: 0, padding: 0,
-        "-webkit-backface-visibility": "hidden"
-      }).appendTo("#slideshow");
+      var $block = newBlock();
       $img.appendTo($block);
       console.log("IMAGE READY >>>>>>>>> " + $img.width() + "x" + $img.height());
     };
     ss.onImageDismissed = null;
-    ss.transitionOn = function(img, duration, complete) {
+    ss.onWelcome = function(img, duration, complete) {
+      var $img = scaleImage(img);
+      var $block = newBlock();
+    };
+    ss.onTransition = function(img1, img2, duration, complete) {
       $("div.slideBlock").eq(0).transition({left: -viewportSize.width}, duration, 'ease');
       $("div.slideBlock").eq(1).transition({left: 0}, duration, 'ease', complete);
     };
