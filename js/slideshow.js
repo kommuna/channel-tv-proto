@@ -52,6 +52,7 @@ var Slideshow = function($root) {
         $(img).transition({opacity:1}, duration, next);
     };
     this.onImageDismissed = function(img) { $(img).remove(); }
+    this.currentEffect = null;
 };
 
 Slideshow.prototype.createImage = function(img) {
@@ -76,16 +77,39 @@ Slideshow.prototype.start = function(imageData) {
         self.imagePromises[0].done(function(img) {
             var $img = self.createImage(img);
             self.activeImage = $img;
-            self.onWelcome && self.onWelcome(img, self.duration, next);
+            self.onWelcome && self.onWelcome(img, self.duration, function() {
+                self.delay(self.lifetime, function() { self.showNext(); });
+                next();
+            });
         });
-    }).delay(self.lifetime).queue(function(next) {
-        self.showNext();
-        next();
     });
+};
+
+Slideshow.prototype.delay = function(duration, callback) {
+    this.currentEffect = new Object();
+    this.currentEffect.effect = callback;
+    this.currentEffect.timeout = setTimeout(this.currentEffect.effect, duration);
+    this.currentEffect.started = new Date().getTime();
+};
+
+// invoke callback when slideshow is idle (not moving, eg showing static picture).
+Slideshow.prototype.invokeWhenIdle = function(callback) {
+    var busy = this.currentEffect != null;
+    if (busy) {
+        clearTimeout(this.currentEffect.timeout);
+    }
+    callback();
+    if (busy) {
+        var remaining = Math.floor((new Date().getTime() - this.currentEffect.started)/1000);
+        if (remaining > 0) {
+            this.currentEffect.timeout = setTimeout(this.currentEffect.effect, remaining);
+        }
+    }
 };
 
 Slideshow.prototype.showNext = function() {
     // current image is supposed to be loaded. load next
+    this.currentEffect = null;
     var prevIndex = this.index;
     this.index++;
     if (this.index >= this.imageCount) {
@@ -95,10 +119,7 @@ Slideshow.prototype.showNext = function() {
     $.when(this.imagePromises[prevIndex], this.imagePromises[this.index]).done(function(img1, img2) {
         self.onTransition && self.onTransition(img1, img2, self.duration, function() {
             self.activeImage = self.createImage(img2);
-            self.$root.delay(self.lifetime).queue(function(next) {
-                self.showNext();
-                next();
-            });
+            self.delay(self.lifetime, function() { self.showNext(); });
         });
     });
 };

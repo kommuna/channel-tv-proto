@@ -16,11 +16,14 @@
   <script>
   var feedPromise = new $.Deferred();
   var soundPromise = new $.Deferred();
+
+  var ss = null;
   
   var viewportSize = {width: 0};
   
   function winResized() {
-    $("#slideshow").queue(function(next) {
+    if (ss)
+    ss.invokeWhenIdle(function() {
         var $ss = $("#slideshow");
         var ww = $(window).width();
         var wh = $(window).height();
@@ -29,6 +32,7 @@
         console.log("Viewport is now: " + ww + "x" + wh);
         $ss.css({width: ww, height: wh});
         $("body").css({width: ww, height: wh});
+        // hide invis block on resize...
         var $blocks = $("div.slideBlock");
         //$blocks.addClass("notransition").stop(true);
         $($blocks[0]).css({top: 0, left: 0, width: ww, height: wh});
@@ -37,7 +41,6 @@
           // todo animate rescale
           scaleImage(img);
         });
-        next();
     });
   }
   
@@ -74,22 +77,15 @@
   
   var boardFeedURL =   "https://uk.pinterest.com/earthskylab/axis-mundi-earthskylab.rss";
   //"https://www.pinterest.com/skogkatten/cute-cats.rss";
-  var ss = null;
   jQuery(document).ready(function() {
     ss = new Slideshow($("#slideshow"));
     ss.duration = 1500;
-    ss.onImageReady = function(img) {
-      var $img = scaleImage(img);
-      //$img.appendTo($("div.slideBlock").eq(1));
-      $("div.slideBlock").eq(0).remove();
-      var $block = newBlock();
-      $img.appendTo($block);
-      console.log("IMAGE READY >>>>>>>>> " + $img.width() + "x" + $img.height());
-    };
+    
     ss.onWelcome = function(img, duration, complete) {
       var $img = scaleImage(img);
       newBlock().css({left:-viewportSize.width});
       var $block = newBlock().css({left:0});
+      $("#loading").hide();
       $img.css({opacity:0}).appendTo($block);
       $img.transition({opacity:1}, duration, complete);
     };
@@ -237,7 +233,10 @@ SC.oEmbed(track_url, { auto_play: false }).then(function(oEmbed) {
 </head>
 
 <body>
-    <div id="slideshow" style="position: absolute; margin: 0; padding: 0; background-color: black; border: none; transition: all 0.5s ease 0s;">
+    <div id="slideshow" style="position: absolute; width:100%; height: 100%; margin: 0; padding: 0; background-color: black; border: none; transition: all 0.5s ease 0s;">
+      <div id="loading" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0;">
+        <img style="margin-left: 45%; margin-top: 200px;" src="img/ajax-loader-dark.gif"/>
+      </div>
     <!--
       <div class="slideBlock" style="position: absolute; width: 100%; height: 100%; margin: 0; padding: 0; -webkit-backface-visibility: hidden;">
         <h1 style="z-index: 10000; color: white; margin-left: 45%;">Loading...</h1>

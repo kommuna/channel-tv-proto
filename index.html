@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
   <!--script src="jssor.slider.mini.js"></script-->
+  <script src="js/jquery.transit.min.js"></script> 
   <script src="js/slideshow.js"></script>
-
+  
     <script>
         var apiKey = '8daacf6fbb35226a5bdf363fa8daa6fd';
         var ss = null;
@@ -46,7 +47,7 @@
       var player;
       function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-		  width: 1, height: 1,
+          width: 1, height: 1,
           videoId: 'RkZkekS8NQU',
           events: {
             'onReady': onPlayerReady,
@@ -57,12 +58,12 @@
 
       // 4. The API will call this function when the video player is ready.
       function onPlayerReady(event) {
-	    $("#player").attr("width", 0).attr("height", 0);
-		showAudioInfo();
-		$("#audioInfo").show();
+        $("#player").attr("width", 0).attr("height", 0);
+        showAudioInfo();
+        $("#audioInfo").show();
         event.target.playVideo();
-		$("#audioStatus").text("Playing");
-		setTimeout(updatePlayProgress, 1000);
+        $("#audioStatus").text("Playing");
+        setTimeout(updatePlayProgress, 1000);
       }
 
       // 5. The API calls this function when the player's state changes.
@@ -74,17 +75,17 @@
           //setTimeout(stopVideo, 6000);
           done = true;
         }
-		showAudioInfo();
+        showAudioInfo();
       }
       function stopVideo() {
         player.stopVideo();
       }
-	  
+      
 function updatePlayProgress() {
   $("#time").text(toDuration(player.getCurrentTime()));
   setTimeout(updatePlayProgress, 1000);
 }
-	  
+      
 function toDuration(val) {
     var sec_num = parseInt(val, 10); // don't forget the second param
     var hours   = Math.floor(sec_num / 3600);
@@ -97,21 +98,21 @@ function toDuration(val) {
     var time    = hours+':'+minutes+':'+seconds;
     return time;
 }
-	  
+      
 function showAudioInfo() {
     var time = player.getDuration();
-	$("#duration").text(toDuration(time));
-	$("#time").text(toDuration(player.getCurrentTime()));
-	$("#volume").text(parseInt(player.getVolume() * 100) / 100);
+    $("#duration").text(toDuration(time));
+    $("#time").text(toDuration(player.getCurrentTime()));
+    $("#volume").text(parseInt(player.getVolume() * 100) / 100);
 }
     </script>
-	
+    
 </head>
 
 <body>
 
         <!-- Loading Screen -->
-		<!--
+        <!--
         <div u="loading" style="position: absolute; top: 0px; left: 0px;">
             <div style="filter: alpha(opacity=70); opacity:0.7; position: absolute; display: block;
                 background-color: #000000; top: 0px; left: 0px;width: 100%;height:100%;">
@@ -120,28 +121,28 @@ function showAudioInfo() {
                 top: 0px; left: 0px;width: 100%;height:100%;">
             </div>
         </div>
-		-->
+        -->
 
     <!-- Slides Container -->
-	<div style="width: 100%;">
-	  <div id="controls" style="position: absolute; left: 810px;">
-	    <div id="audioInfo">
-		  <div>Status: <span id="audioStatus">Initializing</span></div>
-		  <div>Time: <span id="time"/></div>
-		  <div>Duration: <span id="duration"/></div>
-		  <div>Volume: <span id="volume"/></div>
-		</div>
-	  </div>
+    <div style="width: 100%;">
+      <div id="controls" style="position: absolute; left: 810px;">
+        <div id="audioInfo">
+          <div>Status: <span id="audioStatus">Initializing</span></div>
+          <div>Time: <span id="time"/></div>
+          <div>Duration: <span id="duration"/></div>
+          <div>Volume: <span id="volume"/></div>
+        </div>
+      </div>
       <div id="images" u="slides" style="position: relative; width: 800px; height: 800px; overflow: hidden;"></div>
-	</div>
-	
-	<!-- Player -->
-	<!--
+    </div>
+    
+    <!-- Player -->
+    <!--
     <iframe id="player" type="text/html" width="0" height="0"
        src="https://www.youtube.com/embed/RkZkekS8NQU?enablejsapi=1&autoplay=1&origin=https://www.example.com/"
        frameborder="0"></iframe>
-	   -->
-	<div id="player"></div>
+       -->
+    <div id="player"></div>
 
 </body>
 
